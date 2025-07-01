@@ -89,11 +89,17 @@ with tab1:
 
         with st.expander("🔴 View Critical Issues"):
             st.markdown("**Low CTR (<1%) with High Impressions (>1000)**")
-            st.dataframe(critical, use_container_width=True) if not critical.empty else st.info("No critical issues found.")
+            if not critical.empty:
+                st.dataframe(critical, use_container_width=True)
+            else:
+                st.info("No critical issues found.")
 
         with st.expander("🟠 View Warning Keywords"):
             st.markdown("**Impression Surge but Low Clicks (<10)**")
-            st.dataframe(warnings, use_container_width=True) if not warnings.empty else st.info("No warnings found.")
+            if not warnings.empty:
+                st.dataframe(warnings, use_container_width=True)
+            else:
+                st.info("No warnings found.")
 
         with st.expander("🟢 View High-CTR, Low-Rank Wins"):
             st.markdown("**High CTR (>10%) but Low Ranking (Position >10)**")
@@ -163,11 +169,17 @@ with tab2:
 
             with st.expander("🔴 View Critical Issues"):
                 st.markdown("**Low CTR (<1%) with High Impressions (>1000)**")
-                st.dataframe(critical, use_container_width=True) if not critical.empty else st.info("No critical issues found.")
+                if not critical.empty:
+                    st.dataframe(critical, use_container_width=True)
+                else:
+                    st.info("No critical issues found.")
 
             with st.expander("🟠 View Warning Keywords"):
                 st.markdown("**Impression Surge but Low Clicks (<10)**")
-                st.dataframe(warnings, use_container_width=True) if not warnings.empty else st.info("No warnings found.")
+                if not warnings.empty:
+                    st.dataframe(warnings, use_container_width=True)
+                else:
+                    st.info("No warnings found.")
 
             with st.expander("🟢 View High-CTR, Low-Rank Wins"):
                 st.markdown("**High CTR (>10%) but Low Ranking (Position >10)**")
