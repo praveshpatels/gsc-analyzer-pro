@@ -56,6 +56,14 @@ with tab1:
         df["ctr"] = df["ctr"].astype(str).str.replace("%", "").str.replace(",", "").astype(float)
         df.dropna(subset=required_cols, how="all", inplace=True)
 
+        # Filter Controls
+        with st.expander("🔍 Filter Data"):
+            min_impr = st.slider("Minimum Impressions", 0, int(df["impressions"].max()), 100)
+            keyword_filter = st.text_input("Filter by Query (Optional)", "")
+            df = df[df["impressions"] >= min_impr]
+            if keyword_filter:
+                df = df[df["query"].str.contains(keyword_filter, case=False, na=False)]
+
         st.subheader("📊 Performance Metrics")
         total_clicks = df["clicks"].sum()
         total_impr = df["impressions"].sum()
@@ -107,63 +115,68 @@ with tab1:
 # TAB 2: EXCEL ANALYZER (Enhanced with Alerts)
 # =====================================
 with tab2:
-    st.header("📊 GSC Excel Analyzer (.xlsx)")
-    xlsx_file = st.file_uploader("Upload Excel Export from GSC", type=["xlsx"], key="xlsx_uploader")
+    st.header("📊 GSC Excel Analyzer")
+    excel_file = st.file_uploader("Upload Excel File (.xlsx)", type=["xlsx"], key="excel_uploader")
 
-    if xlsx_file:
-        all_sheets = pd.read_excel(xlsx_file, sheet_name=None)
+    if excel_file:
+        all_sheets = pd.read_excel(excel_file, sheet_name=None)
         queries_df = all_sheets.get("Queries")
-        pages_df = all_sheets.get("Pages")
-        countries_df = all_sheets.get("Countries")
-
         if queries_df is not None:
-            st.subheader("🔎 Queries Overview")
-            for col in ["Clicks", "Impressions", "CTR", "Position"]:
-                queries_df[col] = queries_df[col].astype(str).str.replace(",", "").str.replace("%", "").astype(float)
+            queries_df.columns = [col.strip().lower().replace(" ", "_") for col in queries_df.columns]
+            queries_df.rename(columns={"top_queries": "query"}, inplace=True)
+            for col in ["clicks", "impressions", "position"]:
+                queries_df[col] = queries_df[col].astype(str).str.replace(",", "").astype(float)
+            queries_df["ctr"] = queries_df["ctr"].astype(str).str.replace("%", "").str.replace(",", "").astype(float)
+            queries_df.dropna(subset=["query", "clicks", "impressions", "ctr", "position"], how="all", inplace=True)
 
-            st.dataframe(queries_df.head(10), use_container_width=True)
-            q_clicks = queries_df["Clicks"].sum()
-            q_impr = queries_df["Impressions"].sum()
-            q_ctr = (queries_df["CTR"] * queries_df["Impressions"]).sum() / q_impr if q_impr else 0
-            q_pos = (queries_df["Position"] * queries_df["Impressions"]).sum() / q_impr if q_impr else 0
+            with st.expander("🔍 Filter Data"):
+                min_impr = st.slider("Minimum Impressions", 0, int(queries_df["impressions"].max()), 100, key="excel_min_impr")
+                keyword_filter = st.text_input("Filter by Query (Optional)", "", key="excel_kw_filter")
+                queries_df = queries_df[queries_df["impressions"] >= min_impr]
+                if keyword_filter:
+                    queries_df = queries_df[queries_df["query"].str.contains(keyword_filter, case=False, na=False)]
+
+            st.subheader("📊 Performance Metrics")
+            total_clicks = queries_df["clicks"].sum()
+            total_impr = queries_df["impressions"].sum()
+            avg_ctr = (queries_df["ctr"] * queries_df["impressions"]).sum() / total_impr if total_impr else 0
+            avg_pos = (queries_df["position"] * queries_df["impressions"]).sum() / total_impr if total_impr else 0
 
             col1, col2, col3, col4 = st.columns(4)
-            col1.metric("Clicks", f"{q_clicks:,.0f}")
-            col2.metric("Impressions", f"{q_impr:,.0f}")
-            col3.metric("Avg. CTR", f"{q_ctr:.2f}%")
-            col4.metric("Avg. Position", f"{q_pos:.2f}")
+            col1.metric("Total Clicks", f"{total_clicks:,.0f}")
+            col2.metric("Total Impressions", f"{total_impr:,.0f}")
+            col3.metric("Avg. CTR", f"{avg_ctr:.2f}%")
+            col4.metric("Avg. Position", f"{avg_pos:.2f}")
 
-            # Alerts on Queries
-            st.subheader("🔔 Alerts Dashboard (from Queries Sheet)")
-            critical = queries_df[(queries_df["CTR"] < 1.0) & (queries_df["Impressions"] > 1000)]
-            warnings = queries_df[(queries_df["Impressions"] > 1000) & (queries_df["Clicks"] < 10)]
-            wins = queries_df[(queries_df["CTR"] > 10.0) & (queries_df["Position"] > 10)]
+            st.subheader("🔔 Alerts Dashboard (SEO Performance Signals)")
+            critical = queries_df[(queries_df["ctr"] < 1.0) & (queries_df["impressions"] > 1000)]
+            warnings = queries_df[(queries_df["impressions"] > 1000) & (queries_df["clicks"] < 10)]
+            wins = queries_df[(queries_df["ctr"] > 10.0) & (queries_df["position"] > 10)]
 
             col1, col2, col3 = st.columns(3)
-            col1.metric("🔴 Critical", f"{len(critical)}")
-            col2.metric("🟠 Warnings", f"{len(warnings)}")
-            col3.metric("🟢 Wins", f"{len(wins)}")
+            col1.metric("🔴 Critical Issues", f"{len(critical):,}")
+            col2.metric("🟠 Warnings", f"{len(warnings):,}")
+            col3.metric("🟢 Potential Wins", f"{len(wins):,}")
 
-            with st.expander("🔴 Critical Keywords"):
-                st.dataframe(critical, use_container_width=True)
-            with st.expander("🟠 Warning Keywords"):
-                st.dataframe(warnings, use_container_width=True)
-            with st.expander("🟢 Opportunity Wins"):
-                st.dataframe(wins, use_container_width=True)
+            with st.expander("🔴 View Critical Issues"):
+                st.markdown("**Low CTR (<1%) with High Impressions (>1000)**")
+                st.dataframe(critical, use_container_width=True) if not critical.empty else st.info("No critical issues found.")
 
-        if pages_df is not None:
-            st.subheader("📄 Top Pages Performance")
-            for col in ["Clicks", "Impressions", "CTR", "Position"]:
-                pages_df[col] = pages_df[col].astype(str).str.replace(",", "").str.replace("%", "").astype(float)
-            st.dataframe(pages_df.sort_values(by="Clicks", ascending=False).head(10), use_container_width=True)
+            with st.expander("🟠 View Warning Keywords"):
+                st.markdown("**Impression Surge but Low Clicks (<10)**")
+                st.dataframe(warnings, use_container_width=True) if not warnings.empty else st.info("No warnings found.")
 
-        if countries_df is not None:
-            st.subheader("🌍 Country-wise CTR")
-            for col in ["Clicks", "Impressions", "CTR", "Position"]:
-                countries_df[col] = countries_df[col].astype(str).str.replace(",", "").str.replace("%", "").astype(float)
-            top_countries = countries_df.sort_values(by="Impressions", ascending=False).head(10)
-            st.dataframe(top_countries, use_container_width=True)
-            st.bar_chart(top_countries.set_index("Country")["CTR"])
+            with st.expander("🟢 View High-CTR, Low-Rank Wins"):
+                st.markdown("**High CTR (>10%) but Low Ranking (Position >10)**")
+                st.dataframe(wins, use_container_width=True) if not wins.empty else st.info("No wins found.")
 
-    else:
-        st.info("📥 Please upload your GSC Excel export (.xlsx) to begin.")
+            st.subheader("🔝 Top Queries by Clicks")
+            st.dataframe(queries_df.sort_values(by="clicks", ascending=False).head(10), use_container_width=True)
+
+            st.subheader("💡 Opportunity Keywords (Position 5–15, CTR < 5%)")
+            opp = queries_df[(queries_df["position"].between(5, 15)) & (queries_df["ctr"] < 5)]
+            st.markdown(f"**Total Opportunities:** {len(opp)}")
+            st.dataframe(opp.sort_values(by="impressions", ascending=False), use_container_width=True)
+
+            st.download_button("📥 Download Opportunities as CSV", data=opp.to_csv(index=False), file_name="excel_opportunity_keywords.csv", mime="text/csv")
+
