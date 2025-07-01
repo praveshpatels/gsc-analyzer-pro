@@ -87,6 +87,9 @@ with tab1:
             mime="text/csv"
         )
 
+# 📌 CSV Instruction Text
+    st.info("📌 Please upload a Queries.csv file from Google Search Console > Performance or Search Results > Export > Download CSV > Extract Zip File.")
+
 # =====================================
 # TAB 2: EXCEL ANALYZER
 # =====================================
