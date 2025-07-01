@@ -97,7 +97,10 @@ with tab1:
 
         with st.expander("🟢 View High-CTR, Low-Rank Wins"):
             st.markdown("**High CTR (>10%) but Low Ranking (Position >10)**")
-            st.dataframe(wins, use_container_width=True) if not wins.empty else st.info("No wins found.")
+            if not wins.empty:
+                st.dataframe(wins, use_container_width=True)
+            else:
+                st.info("No wins found.")
 
         st.subheader("🔝 Top Queries by Clicks")
         st.dataframe(df.sort_values(by="clicks", ascending=False).head(10), use_container_width=True)
@@ -168,7 +171,10 @@ with tab2:
 
             with st.expander("🟢 View High-CTR, Low-Rank Wins"):
                 st.markdown("**High CTR (>10%) but Low Ranking (Position >10)**")
-                st.dataframe(wins, use_container_width=True) if not wins.empty else st.info("No wins found.")
+                if not wins.empty:
+                    st.dataframe(wins, use_container_width=True)
+                else:
+                    st.info("No wins found.")
 
             st.subheader("🔝 Top Queries by Clicks")
             st.dataframe(queries_df.sort_values(by="clicks", ascending=False).head(10), use_container_width=True)
@@ -179,4 +185,3 @@ with tab2:
             st.dataframe(opp.sort_values(by="impressions", ascending=False), use_container_width=True)
 
             st.download_button("📥 Download Opportunities as CSV", data=opp.to_csv(index=False), file_name="excel_opportunity_keywords.csv", mime="text/csv")
-
