@@ -46,7 +46,7 @@ def render_alerts_dashboard(df):
 
     critical = df[(df["ctr"] < 1.0) & (df["impressions"] > 1000)]
     warnings = df[(df["impressions"] > 1000) & (df["clicks"] < 10)]
-    wins = df[(df["ctr"] > 10.0) & (df["position"] > 10)]
+    wins = df[(df["ctr"] > 10.00) & (df["position"] > 10)]
 
     col1, col2, col3 = st.columns(3)
     col1.metric("🔴 Critical Issues", f"{len(critical):,}")
