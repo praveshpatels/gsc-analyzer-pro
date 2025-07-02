@@ -1,173 +1,183 @@
 # -*- coding: utf-8 -*-
 """
-GSC Analyzer Pro Edition - by Pravesh Patel
-Supports:
-- CSV Upload (Queries.csv)
-- Excel Upload (.xlsx) from GSC
-- Alerts Dashboard in both tabs
-- Tab-based UI for clear separation
+Google Search Console Data Analyzer
+Enhanced with CTR Trendline, Smart Table Toggle, and Keyword Alert System
+Developed by Pravesh Patel
 """
 
 import streamlit as st
 import pandas as pd
 import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
 import io
 
-# Page Setup
-st.set_page_config(page_title="GSC Analyzer Pro Edition", page_icon="📈", layout="wide")
-st.title("📈 GSC Analyzer Pro Edition")
+# Page setup
+st.set_page_config(page_title="GSC Analyzer", page_icon="🔍", layout="wide")
+st.title("🔍 Google Search Console Data Analyzer")
 st.markdown("*Developed by **Pravesh Patel***", unsafe_allow_html=True)
 
-# Sidebar Bio
-st.sidebar.markdown("## 👨‍💻 About the Developer")
-st.sidebar.markdown("""
-Hi, I'm **Pravesh Patel** — a passionate SEO Manager and data enthusiast.
+# Upload file
+uploaded_file = st.file_uploader("📁 Upload GSC CSV file (Performance > Queries)", type=["csv"])
 
-🔍 I specialize in SEO, analytics, and tools that simplify Google Search Console data.
+if uploaded_file:
+    # Read and parse CSV
+    raw_data = uploaded_file.read().decode("utf-8")
+    df = pd.read_csv(io.StringIO(raw_data))
 
-💼 Working at Blow Horn Media, I build tools like this to find content opportunities faster.
+    # Normalize columns
+    df.columns = [col.strip().lower().replace(" ", "_") for col in df.columns]
+    df.rename(columns={"top_queries": "query"}, inplace=True)
 
-🌐 [Visit praveshpatel.com](https://www.praveshpatel.com)
-""")
+    required_cols = ["query", "clicks", "impressions", "ctr", "position"]
+    missing = [col for col in required_cols if col not in df.columns]
+    if missing:
+        st.error(f"❌ Missing columns: {', '.join(missing)}")
+        st.stop()
 
-# Tabs
-tab1, tab2 = st.tabs(["📄 CSV Analyzer", "📊 Excel Analyzer"])
+    # Clean numeric values
+    for col in ["clicks", "impressions", "position"]:
+        df[col] = df[col].astype(str).str.replace(",", "", regex=False)
+        df[col] = pd.to_numeric(df[col], errors="coerce")
 
-# =====================================
-# TAB 1: CSV ANALYZER (with Alerts Dashboard)
-# =====================================
-with tab1:
-    st.header("📄 GSC CSV Analyzer")
-    uploaded_file = st.file_uploader("Upload `Queries.csv` file", type=["csv"], key="csv_uploader")
+    df["ctr"] = df["ctr"].astype(str).str.replace("%", "", regex=False).str.replace(",", "", regex=False)
+    df["ctr"] = pd.to_numeric(df["ctr"], errors="coerce")
 
-    if uploaded_file:
-        raw_data = uploaded_file.read().decode("utf-8")
-        df = pd.read_csv(io.StringIO(raw_data))
+    df.dropna(subset=["clicks", "impressions", "ctr", "position"], how="all", inplace=True)
 
-        # Normalize column names
-        df.columns = [col.strip().lower().replace(" ", "_") for col in df.columns]
-        df.rename(columns={"top_queries": "query"}, inplace=True)
+    # Filter controls
+    with st.expander("🔍 Filter Data"):
+        min_impr = st.slider("Minimum Impressions", 0, int(df["impressions"].max()), 100)
+        keyword_filter = st.text_input("Filter by Query (Optional)", "")
+        df = df[df["impressions"] >= min_impr]
+        if keyword_filter:
+            df = df[df["query"].str.contains(keyword_filter, case=False, na=False)]
 
-        required_cols = ["query", "clicks", "impressions", "ctr", "position"]
-        if not all(col in df.columns for col in required_cols):
-            st.error("❌ Missing required columns. Please upload a valid GSC Queries.csv file.")
-            st.stop()
+    # Smart raw data table
+    if st.checkbox("📄 Show Raw Data"):
+        row_limit = st.radio("How many rows to display?", options=["Top 100", "Top 500", "All"], index=1)
+        if row_limit == "Top 100":
+            st.dataframe(df.head(100), use_container_width=True)
+        elif row_limit == "Top 500":
+            st.dataframe(df.head(500), use_container_width=True)
+        else:
+            st.dataframe(df, use_container_width=True)
 
-        for col in ["clicks", "impressions", "position"]:
-            df[col] = df[col].astype(str).str.replace(",", "").astype(float)
-        df["ctr"] = df["ctr"].astype(str).str.replace("%", "").str.replace(",", "").astype(float)
-        df.dropna(subset=required_cols, how="all", inplace=True)
+    # Weighted metrics
+    total_clicks = df["clicks"].sum()
+    total_impressions = df["impressions"].sum()
+    avg_ctr = (df["ctr"] * df["impressions"]).sum() / total_impressions if total_impressions else 0
+    avg_position = (df["position"] * df["impressions"]).sum() / total_impressions if total_impressions else 0
 
-        # Filter Controls
-        with st.expander("🔍 Filter Data"):
-            min_impr = st.slider("Minimum Impressions", 0, int(df["impressions"].max()), 100)
-            keyword_filter = st.text_input("Filter by Query (Optional)", "")
-            df = df[df["impressions"] >= min_impr]
-            if keyword_filter:
-                df = df[df["query"].str.contains(keyword_filter, case=False, na=False)]
+    # Display KPIs
+    st.markdown("### 📊 Overall Performance")
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Total Clicks", f"{total_clicks:,.0f}")
+    col2.metric("Total Impressions", f"{total_impressions:,.0f}")
+    col3.metric("Avg. CTR", f"{avg_ctr:.2f}%")
+    col4.metric("Avg. Position", f"{avg_position:.2f}")
 
-        st.subheader("📊 Performance Metrics")
-        total_clicks = df["clicks"].sum()
-        total_impr = df["impressions"].sum()
-        avg_ctr = (df["ctr"] * df["impressions"]).sum() / total_impr if total_impr else 0
-        avg_pos = (df["position"] * df["impressions"]).sum() / total_impr if total_impr else 0
+    # Top Queries
+    st.markdown("### 🔝 Top Queries by Clicks")
+    st.dataframe(
+        df.sort_values(by="clicks", ascending=False)[["query", "clicks", "impressions", "ctr", "position"]].head(10),
+        use_container_width=True
+    )
 
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Total Clicks", f"{total_clicks:,.0f}")
-        col2.metric("Total Impressions", f"{total_impr:,.0f}")
-        col3.metric("Avg. CTR", f"{avg_ctr:.2f}%")
-        col4.metric("Avg. Position", f"{avg_pos:.2f}")
+    # CTR vs Position Chart Explanation
+    with st.expander("ℹ️ How to Read 'CTR vs Position' Chart"):
+        st.markdown("""
+        - **Each dot** = 1 keyword/query
+        - **X-axis (Position):** Lower = better Google ranking (1 = top)
+        - **Y-axis (CTR):** Higher = better click-through rate
 
-        # Alerts Dashboard
-        st.subheader("🔔 Alerts Dashboard (SEO Performance Signals)")
-        critical = df[(df["ctr"] < 1.0) & (df["impressions"] > 1000)]
-        warnings = df[(df["impressions"] > 1000) & (df["clicks"] < 10)]
-        wins = df[(df["ctr"] > 10.0) & (df["position"] > 10.0)]  # ensure float comparison
+        ### Interpreting:
+        - ✅ **Top-left:** Strong keywords (high CTR & top ranking)
+        - ⚠️ **Bottom-left:** Good rank but low CTR → improve meta/title
+        - 🚀 **Top-right:** Low rank but strong CTR → boost content/rank
+        - ❌ **Bottom-right:** Poor rank & CTR → deprioritize
+        """)
 
-        col1, col2, col3 = st.columns(3)
-        col1.metric("🔴 Critical Issues", f"{len(critical):,}")
-        col2.metric("🟠 Warnings", f"{len(warnings):,}")
-        col3.metric("🟢 Potential Wins", f"{len(wins):,}")
+    # CTR vs Position using Plotly
+    st.markdown("### 📌 CTR vs Average Position (Interactive)")
+    df_sorted = df.sort_values("position")
+    fig = px.scatter(
+        df_sorted,
+        x="position",
+        y="ctr",
+        hover_data=["query", "clicks", "impressions"],
+        labels={"position": "Google Position", "ctr": "CTR (%)"},
+        title="CTR vs Position",
+        opacity=0.6
+    )
 
-        with st.expander("🔴 View Critical Issues"):
-            st.markdown("**Low CTR (<1%) with High Impressions (>1000)**")
-            if not critical.empty:
-                st.dataframe(critical, use_container_width=True)
-            else:
-                st.info("No critical issues found.")
+    # Add trendline
+    if len(df_sorted) > 1:
+        z = np.polyfit(df_sorted["position"], df_sorted["ctr"], 1)
+        p = np.poly1d(z)
+        fig.add_trace(
+            go.Scatter(
+                x=df_sorted["position"],
+                y=p(df_sorted["position"]),
+                mode="lines",
+                name="Trendline",
+                line=dict(color="red", dash="dash")
+            )
+        )
 
-        with st.expander("🟠 View Warning Keywords"):
-            st.markdown("**Impression Surge but Low Clicks (<10)**")
-            if not warnings.empty:
-                st.dataframe(warnings, use_container_width=True)
-            else:
-                st.info("No warnings found.")
+    fig.update_layout(
+        xaxis=dict(autorange="reversed"),  # Position 1 = best
+        template="plotly_white",
+        showlegend=True
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
-        with st.expander("🟢 View High-CTR, Low-Rank Wins"):
-            st.markdown("**High CTR (>10%) but Low Ranking (Position >10)**")
-            if not wins.empty:
-                st.dataframe(wins, use_container_width=True)
-            else:
-                st.info("No wins found.")
+    # Opportunity keywords
+    st.markdown("### 💡 Opportunity Keywords (Position 5–15, CTR < 5%)")
+    opportunities = df[(df["position"] >= 5) & (df["position"] <= 15) & (df["ctr"] < 5)]
+    st.dataframe(
+        opportunities.sort_values(by="impressions", ascending=False).head(10),
+        use_container_width=True
+    )
+    st.download_button(
+        label="📥 Download Opportunities as CSV",
+        data=opportunities.to_csv(index=False),
+        file_name="opportunity_keywords.csv",
+        mime="text/csv"
+    )
 
-        st.subheader("🔝 Top Queries by Clicks")
-        st.dataframe(df.sort_values(by="clicks", ascending=False).head(10), use_container_width=True)
+    # 🚨 Keyword Alert System
+    st.markdown("### 🚨 Keyword Alerts (SEO Insights)")
 
-        st.subheader("💡 Opportunity Keywords (Position 5–15, CTR < 5%)")
-        opp = df[(df["position"].between(5, 15)) & (df["ctr"] < 5)]
-        st.markdown(f"**Total Opportunities:** {len(opp)}")
-        st.dataframe(opp.sort_values(by="impressions", ascending=False), use_container_width=True)
+    # 1. Low CTR despite High Impressions
+    low_ctr_alerts = df[(df["impressions"] > 1000) & (df["ctr"] < 1.0)]
+    with st.expander("⚠️ Low CTR (<1%) with High Impressions (>1000)"):
+        st.dataframe(
+            low_ctr_alerts.sort_values(by="impressions", ascending=False)[
+                ["query", "clicks", "impressions", "ctr", "position"]
+            ].head(20),
+            use_container_width=True
+        )
 
-        st.download_button("📥 Download Opportunities as CSV", data=opp.to_csv(index=False), file_name="opportunity_keywords.csv", mime="text/csv")
+    # 2. Big Impression Surge but Low Clicks
+    surge_alerts = df[(df["impressions"] > 1000) & (df["clicks"] < 10) & (df["ctr"] < 1.0)]
+    with st.expander("📈 Impression Surge but Low Clicks (<10)"):
+        st.dataframe(
+            surge_alerts.sort_values(by="impressions", ascending=False)[
+                ["query", "clicks", "impressions", "ctr", "position"]
+            ].head(20),
+            use_container_width=True
+        )
 
-    st.info("📌 Please upload a Queries.csv file from Google Search Console > Performance or Search Results > Export > Download CSV > Extract Zip File.")
+    # 3. High CTR but Low Rank (Potential Boosters)
+    booster_alerts = df[(df["ctr"] > 10.0) & (df["position"] > 10)]
+    with st.expander("🚀 High CTR (>10%) but Low Ranking (Position >10)"):
+        st.dataframe(
+            booster_alerts.sort_values(by="ctr", ascending=False)[
+                ["query", "clicks", "impressions", "ctr", "position"]
+            ].head(20),
+            use_container_width=True
+        )
 
-# =====================================
-# TAB 2: EXCEL ANALYZER
-# =====================================
-with tab2:
-    st.header("📊 GSC Excel Analyzer")
-    excel_file = st.file_uploader("Upload GSC Excel File (.xlsx)", type=["xlsx"], key="excel_uploader")
-
-    if excel_file:
-        all_sheets = pd.read_excel(excel_file, sheet_name=None)
-        queries_df = all_sheets.get("Queries")
-
-        if queries_df is not None:
-            queries_df.columns = [col.strip().lower().replace(" ", "_") for col in queries_df.columns]
-            queries_df.rename(columns={"top_queries": "query"}, inplace=True)
-            for col in ["clicks", "impressions", "position"]:
-                queries_df[col] = queries_df[col].astype(str).str.replace(",", "").astype(float)
-            queries_df["ctr"] = queries_df["ctr"].astype(str).str.replace("%", "").str.replace(",", "").astype(float)
-            queries_df.dropna(subset=["query", "clicks", "impressions", "ctr", "position"], how="all", inplace=True)
-
-            with st.expander("🔍 Filter Data"):
-                min_impr = st.slider("Minimum Impressions", 0, int(queries_df["impressions"].max()), 100, key="excel_min_impr")
-                keyword_filter = st.text_input("Filter by Query (Optional)", "", key="excel_kw_filter")
-                queries_df = queries_df[queries_df["impressions"] >= min_impr]
-                if keyword_filter:
-                    queries_df = queries_df[queries_df["query"].str.contains(keyword_filter, case=False, na=False)]
-
-            st.subheader("📊 Performance Metrics")
-            total_clicks = queries_df["clicks"].sum()
-            total_impr = queries_df["impressions"].sum()
-            avg_ctr = (queries_df["ctr"] * queries_df["impressions"]).sum() / total_impr if total_impr else 0
-            avg_pos = (queries_df["position"] * queries_df["impressions"]).sum() / total_impr if total_impr else 0
-
-            col1, col2, col3, col4 = st.columns(4)
-            col1.metric("Total Clicks", f"{total_clicks:,.0f}")
-            col2.metric("Total Impressions", f"{total_impr:,.0f}")
-            col3.metric("Avg. CTR", f"{avg_ctr:.2f}%")
-            col4.metric("Avg. Position", f"{avg_pos:.2f}")
-
-            render_alerts_dashboard(queries_df)
-
-            st.subheader("🔝 Top Queries by Clicks")
-            st.dataframe(queries_df.sort_values(by="clicks", ascending=False).head(10), use_container_width=True)
-
-            st.subheader("💡 Opportunity Keywords (Position 5–15, CTR < 5%)")
-            opp = queries_df[(queries_df["position"].between(5, 15)) & (queries_df["ctr"] < 5)]
-            st.markdown(f"**Total Opportunities:** {len(opp)}")
-            st.dataframe(opp.sort_values(by="impressions", ascending=False), use_container_width=True)
-
-            st.download_button("📥 Download Opportunities as CSV", data=opp.to_csv(index=False), file_name="excel_opportunity_keywords.csv", mime="text/csv")
+else:
+    st.info("📌 Please upload a CSV file from Google Search Console > Performance > Queries tab.")
