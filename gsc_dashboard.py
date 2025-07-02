@@ -46,6 +46,12 @@ def render_alerts_dashboard(df):
 
     critical = df[(df["ctr"] < 1.0) & (df["impressions"] > 1000)]
     warnings = df[(df["impressions"] > 1000) & (df["clicks"] < 10)]
+
+    st.write("Min CTR in dataset:", df["ctr"].min())
+    st.write("Max CTR in dataset:", df["ctr"].max())
+    st.write("Min Position in dataset:", df["position"].min())
+    st.write("Max Position in dataset:", df["position"].max())
+    st.write("CTR > 10 count:", df[df["ctr"] > 10.0].shape[0])
     wins = df[(df["ctr"] > 10.00) & (df["position"] > 10)]
 
     col1, col2, col3 = st.columns(3)
