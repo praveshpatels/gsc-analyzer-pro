@@ -34,54 +34,7 @@ Hi, I'm **Pravesh Patel** — a passionate SEO Manager and data enthusiast.
 tab1, tab2 = st.tabs(["📄 CSV Analyzer", "📊 Excel Analyzer"])
 
 # =====================================
-# Helper Function to Render Alerts Dashboard
-# =====================================
-def render_alerts_dashboard(df):
-    st.subheader("🔔 Alerts Dashboard (SEO Performance Signals)")
-    df = df.copy()
-    df["ctr"] = pd.to_numeric(df["ctr"], errors="coerce")
-    df["position"] = pd.to_numeric(df["position"], errors="coerce")
-    df["clicks"] = pd.to_numeric(df["clicks"], errors="coerce")
-    df["impressions"] = pd.to_numeric(df["impressions"], errors="coerce")
-
-    critical = df[(df["ctr"] < 1.0) & (df["impressions"] > 1000)]
-    warnings = df[(df["impressions"] > 1000) & (df["clicks"] < 10)]
-
-    st.write("Min CTR in dataset:", df["ctr"].min())
-    st.write("Max CTR in dataset:", df["ctr"].max())
-    st.write("Min Position in dataset:", df["position"].min())
-    st.write("Max Position in dataset:", df["position"].max())
-    st.write("CTR > 10 count:", df[df["ctr"] > 10.0].shape[0])
-    wins = df[(df["ctr"] > 10.00) & (df["position"] > 10)]
-
-    col1, col2, col3 = st.columns(3)
-    col1.metric("🔴 Critical Issues", f"{len(critical):,}")
-    col2.metric("🟠 Warnings", f"{len(warnings):,}")
-    col3.metric("🟢 Potential Wins", f"{len(wins):,}")
-
-    with st.expander("🔴 View Critical Issues"):
-        st.markdown("**Low CTR (<1%) with High Impressions (>1000)**")
-        if not critical.empty:
-            st.dataframe(critical, use_container_width=True)
-        else:
-            st.info("No critical issues found.")
-
-    with st.expander("🟠 View Warning Keywords"):
-        st.markdown("**Impression Surge but Low Clicks (<10)**")
-        if not warnings.empty:
-            st.dataframe(warnings, use_container_width=True)
-        else:
-            st.info("No warnings found.")
-
-    with st.expander("🟢 View High-CTR, Low-Rank Wins"):
-        st.markdown("**High CTR (>10%) but Low Ranking (Position >10)**")
-        if not wins.empty:
-            st.dataframe(wins, use_container_width=True)
-        else:
-            st.info("No wins found.")
-
-# =====================================
-# TAB 1: CSV ANALYZER
+# TAB 1: CSV ANALYZER (with Alerts Dashboard)
 # =====================================
 with tab1:
     st.header("📄 GSC CSV Analyzer")
@@ -90,6 +43,8 @@ with tab1:
     if uploaded_file:
         raw_data = uploaded_file.read().decode("utf-8")
         df = pd.read_csv(io.StringIO(raw_data))
+
+        # Normalize column names
         df.columns = [col.strip().lower().replace(" ", "_") for col in df.columns]
         df.rename(columns={"top_queries": "query"}, inplace=True)
 
@@ -103,6 +58,7 @@ with tab1:
         df["ctr"] = df["ctr"].astype(str).str.replace("%", "").str.replace(",", "").astype(float)
         df.dropna(subset=required_cols, how="all", inplace=True)
 
+        # Filter Controls
         with st.expander("🔍 Filter Data"):
             min_impr = st.slider("Minimum Impressions", 0, int(df["impressions"].max()), 100)
             keyword_filter = st.text_input("Filter by Query (Optional)", "")
@@ -122,7 +78,37 @@ with tab1:
         col3.metric("Avg. CTR", f"{avg_ctr:.2f}%")
         col4.metric("Avg. Position", f"{avg_pos:.2f}")
 
-        render_alerts_dashboard(df)
+        # Alerts Dashboard
+        st.subheader("🔔 Alerts Dashboard (SEO Performance Signals)")
+        critical = df[(df["ctr"] < 1.0) & (df["impressions"] > 1000)]
+        warnings = df[(df["impressions"] > 1000) & (df["clicks"] < 10)]
+        wins = df[(df["ctr"] > 10.0) & (df["position"] > 10)]
+
+        col1, col2, col3 = st.columns(3)
+        col1.metric("🔴 Critical Issues", f"{len(critical):,}")
+        col2.metric("🟠 Warnings", f"{len(warnings):,}")
+        col3.metric("🟢 Potential Wins", f"{len(wins):,}")
+
+        with st.expander("🔴 View Critical Issues"):
+            st.markdown("**Low CTR (<1%) with High Impressions (>1000)**")
+            if not critical.empty:
+                st.dataframe(critical, use_container_width=True)
+            else:
+                st.info("No critical issues found.")
+
+        with st.expander("🟠 View Warning Keywords"):
+            st.markdown("**Impression Surge but Low Clicks (<10)**")
+            if not warnings.empty:
+                st.dataframe(warnings, use_container_width=True)
+            else:
+                st.info("No warnings found.")
+
+        with st.expander("🟢 View High-CTR, Low-Rank Wins"):
+            st.markdown("**High CTR (>10%) but Low Ranking (Position >10)**")
+            if not wins.empty:
+                st.dataframe(wins, use_container_width=True)
+            else:
+                st.info("No wins found.")
 
         st.subheader("🔝 Top Queries by Clicks")
         st.dataframe(df.sort_values(by="clicks", ascending=False).head(10), use_container_width=True)
