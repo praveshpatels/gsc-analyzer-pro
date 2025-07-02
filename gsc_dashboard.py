@@ -183,11 +183,11 @@ with tab2:
                     st.dataframe(warnings, use_container_width=True) if not warnings.empty else st.info("No warnings found.")
 
                 with st.expander("🟢 View High-CTR, Low-Rank Wins"):
-    st.markdown("**High CTR (>10%) but Low Ranking (Position >10)**")
-    if not wins.empty:
-        st.dataframe(wins, use_container_width=True)
-    else:
-        st.info("No wins found.")
+                  st.markdown("**High CTR (>10%) but Low Ranking (Position >10)**")
+                  if not wins.empty:
+                      st.dataframe(wins, use_container_width=True)
+                  else:
+                      st.info("No wins found.")
 
                 st.subheader("🔝 Top Queries by Clicks")
                 st.dataframe(queries_df.sort_values(by="clicks", ascending=False).head(10), use_container_width=True)
