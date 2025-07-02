@@ -82,6 +82,12 @@ with tab1:
         warnings = df[(df["impressions"] > 1000) & (df["clicks"] < 10)]
         wins = df[(df["ctr"] > 10.0) & (df["position"] > 10)]
 
+        # Debug: Check value ranges
+        st.write("\n**Debug Info: Wins Filter**")
+        st.dataframe(df[["query", "ctr", "position"]].sort_values(by="ctr", ascending=False).head(20))
+        st.write("Filtered Wins:")
+        st.write(wins)
+
         col1, col2, col3 = st.columns(3)
         col1.metric("🔴 Critical Issues", f"{len(critical):,}")
         col2.metric("🟠 Warnings", f"{len(warnings):,}")
@@ -162,6 +168,11 @@ with tab2:
             critical = queries_df[(queries_df["ctr"] < 1.0) & (queries_df["impressions"] > 1000)]
             warnings = queries_df[(queries_df["impressions"] > 1000) & (queries_df["clicks"] < 10)]
             wins = queries_df[(queries_df["ctr"] > 10.0) & (queries_df["position"] > 10)]
+
+            st.write("\n**Debug Info: Wins Filter (Excel)**")
+            st.dataframe(queries_df[["query", "ctr", "position"]].sort_values(by="ctr", ascending=False).head(20))
+            st.write("Filtered Wins (Excel):")
+            st.write(wins)
 
             col1, col2, col3 = st.columns(3)
             col1.metric("🔴 Critical Issues", f"{len(critical):,}")
