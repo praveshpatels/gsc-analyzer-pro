@@ -25,8 +25,10 @@ if uploaded_file:
     raw_data = uploaded_file.read().decode("utf-8")
     df = pd.read_csv(io.StringIO(raw_data))
 
-    # Normalize columns
+    # Normalize column names
     df.columns = [col.strip().lower().replace(" ", "_") for col in df.columns]
+
+    # Rename for consistency
     df.rename(columns={"top_queries": "query"}, inplace=True)
 
     required_cols = ["query", "clicks", "impressions", "ctr", "position"]
@@ -87,15 +89,15 @@ if uploaded_file:
     # CTR vs Position Chart Explanation
     with st.expander("ℹ️ How to Read 'CTR vs Position' Chart"):
         st.markdown("""
-        - **Each dot** = 1 keyword/query
-        - **X-axis (Position):** Lower = better Google ranking (1 = top)
-        - **Y-axis (CTR):** Higher = better click-through rate
+        - **Each dot** = 1 keyword/query  
+        - **X-axis (Position):** Lower = better Google ranking (1 = top)  
+        - **Y-axis (CTR):** Higher = better click-through rate  
 
         ### Interpreting:
-        - ✅ **Top-left:** Strong keywords (high CTR & top ranking)
-        - ⚠️ **Bottom-left:** Good rank but low CTR → improve meta/title
-        - 🚀 **Top-right:** Low rank but strong CTR → boost content/rank
-        - ❌ **Bottom-right:** Poor rank & CTR → deprioritize
+        - ✅ **Top-left:** Strong keywords (high CTR & top ranking)  
+        - ⚠️ **Bottom-left:** Good rank but low CTR → improve meta/title  
+        - 🚀 **Top-right:** Low rank but strong CTR → boost content/rank  
+        - ❌ **Bottom-right:** Poor rank & CTR → deprioritize  
         """)
 
     # CTR vs Position using Plotly
@@ -126,7 +128,7 @@ if uploaded_file:
         )
 
     fig.update_layout(
-        xaxis=dict(autorange="reversed"),  # Position 1 = best
+        xaxis=dict(autorange="reversed"),
         template="plotly_white",
         showlegend=True
     )
