@@ -124,12 +124,11 @@ with tab1:
 # TAB 2: EXCEL ANALYZER (Enhanced with Alerts)
 # =====================================
 with tab2:
-    st.header("📊 GSC Excel Analyzer")
+    st.header("📈 GSC Excel Analyzer")
     excel_file = st.file_uploader("Upload Excel File (.xlsx)", type=["xlsx"], key="excel_uploader")
 
     if excel_file:
         all_sheets = pd.read_excel(excel_file, sheet_name=None)
-
         tabs = st.tabs(["🧠 Queries", "📄 Pages", "🌍 Countries"])
 
         # --------------------------------
@@ -152,7 +151,7 @@ with tab2:
                     if keyword_filter:
                         queries_df = queries_df[queries_df["query"].str.contains(keyword_filter, case=False, na=False)]
 
-                st.subheader("📊 Performance Metrics")
+                st.subheader("📈 Performance Metrics")
                 total_clicks = queries_df["clicks"].sum()
                 total_impr = queries_df["impressions"].sum()
                 avg_ctr = (queries_df["ctr"] * queries_df["impressions"]).sum() / total_impr if total_impr else 0
@@ -176,18 +175,24 @@ with tab2:
 
                 with st.expander("🔴 View Critical Issues"):
                     st.markdown("**Low CTR (<1%) with High Impressions (>1000)**")
-                    st.dataframe(critical, use_container_width=True) if not critical.empty else st.info("No critical issues found.")
+                    if not critical.empty:
+                        st.dataframe(critical, use_container_width=True)
+                    else:
+                        st.info("No critical issues found.")
 
                 with st.expander("🟠 View Warning Keywords"):
                     st.markdown("**Impression Surge but Low Clicks (<10)**")
-                    st.dataframe(warnings, use_container_width=True) if not warnings.empty else st.info("No warnings found.")
+                    if not warnings.empty:
+                        st.dataframe(warnings, use_container_width=True)
+                    else:
+                        st.info("No warnings found.")
 
                 with st.expander("🟢 View High-CTR, Low-Rank Wins"):
-                  st.markdown("**High CTR (>10%) but Low Ranking (Position >10)**")
-                  if not wins.empty:
-                      st.dataframe(wins, use_container_width=True)
-                  else:
-                      st.info("No wins found.")
+                    st.markdown("**High CTR (>10%) but Low Ranking (Position >10)**")
+                    if not wins.empty:
+                        st.dataframe(wins, use_container_width=True)
+                    else:
+                        st.info("No wins found.")
 
                 st.subheader("🔝 Top Queries by Clicks")
                 st.dataframe(queries_df.sort_values(by="clicks", ascending=False).head(10), use_container_width=True)
