@@ -30,12 +30,20 @@ Hi, I'm **Pravesh Patel** — a passionate SEO Manager and data enthusiast.
 🌐 [Visit praveshpatel.com](https://www.praveshpatel.com)
 """)
 
-# Tabs Setup
+# Tabs
 tab1, tab2 = st.tabs(["📄 CSV Analyzer", "📊 Excel Analyzer"])
 
-# Shared Alert Logic
+# =====================================
+# Helper Function to Render Alerts Dashboard
+# =====================================
 def render_alerts_dashboard(df):
     st.subheader("🔔 Alerts Dashboard (SEO Performance Signals)")
+    df = df.copy()
+    df["ctr"] = pd.to_numeric(df["ctr"], errors="coerce")
+    df["position"] = pd.to_numeric(df["position"], errors="coerce")
+    df["clicks"] = pd.to_numeric(df["clicks"], errors="coerce")
+    df["impressions"] = pd.to_numeric(df["impressions"], errors="coerce")
+
     critical = df[(df["ctr"] < 1.0) & (df["impressions"] > 1000)]
     warnings = df[(df["impressions"] > 1000) & (df["clicks"] < 10)]
     wins = df[(df["ctr"] > 10.0) & (df["position"] > 10)]
@@ -47,15 +55,24 @@ def render_alerts_dashboard(df):
 
     with st.expander("🔴 View Critical Issues"):
         st.markdown("**Low CTR (<1%) with High Impressions (>1000)**")
-        st.dataframe(critical.sort_values(by="impressions", ascending=False), use_container_width=True) if not critical.empty else st.info("No critical issues found.")
+        if not critical.empty:
+            st.dataframe(critical, use_container_width=True)
+        else:
+            st.info("No critical issues found.")
 
     with st.expander("🟠 View Warning Keywords"):
         st.markdown("**Impression Surge but Low Clicks (<10)**")
-        st.dataframe(warnings.sort_values(by="impressions", ascending=False), use_container_width=True) if not warnings.empty else st.info("No warnings found.")
+        if not warnings.empty:
+            st.dataframe(warnings, use_container_width=True)
+        else:
+            st.info("No warnings found.")
 
     with st.expander("🟢 View High-CTR, Low-Rank Wins"):
         st.markdown("**High CTR (>10%) but Low Ranking (Position >10)**")
-        st.dataframe(wins.sort_values(by="ctr", ascending=False), use_container_width=True) if not wins.empty else st.info("No wins found.")
+        if not wins.empty:
+            st.dataframe(wins, use_container_width=True)
+        else:
+            st.info("No wins found.")
 
 # =====================================
 # TAB 1: CSV ANALYZER
@@ -65,7 +82,8 @@ with tab1:
     uploaded_file = st.file_uploader("Upload `Queries.csv` file", type=["csv"], key="csv_uploader")
 
     if uploaded_file:
-        df = pd.read_csv(uploaded_file)
+        raw_data = uploaded_file.read().decode("utf-8")
+        df = pd.read_csv(io.StringIO(raw_data))
         df.columns = [col.strip().lower().replace(" ", "_") for col in df.columns]
         df.rename(columns={"top_queries": "query"}, inplace=True)
 
@@ -107,7 +125,10 @@ with tab1:
         opp = df[(df["position"].between(5, 15)) & (df["ctr"] < 5)]
         st.markdown(f"**Total Opportunities:** {len(opp)}")
         st.dataframe(opp.sort_values(by="impressions", ascending=False), use_container_width=True)
+
         st.download_button("📥 Download Opportunities as CSV", data=opp.to_csv(index=False), file_name="opportunity_keywords.csv", mime="text/csv")
+
+    st.info("📌 Please upload a Queries.csv file from Google Search Console > Performance or Search Results > Export > Download CSV > Extract Zip File.")
 
 # =====================================
 # TAB 2: EXCEL ANALYZER
@@ -156,4 +177,5 @@ with tab2:
             opp = queries_df[(queries_df["position"].between(5, 15)) & (queries_df["ctr"] < 5)]
             st.markdown(f"**Total Opportunities:** {len(opp)}")
             st.dataframe(opp.sort_values(by="impressions", ascending=False), use_container_width=True)
+
             st.download_button("📥 Download Opportunities as CSV", data=opp.to_csv(index=False), file_name="excel_opportunity_keywords.csv", mime="text/csv")
