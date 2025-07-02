@@ -49,7 +49,7 @@ if uploaded_file:
 
     # Filter controls
     with st.expander("🔍 Filter Data"):
-        min_impr = st.slider("Minimum Impressions", 0, int(df["impressions"].max()), 100)
+        min_impr = st.slider("Minimum Impressions", 0, int(df["impressions"].max()), 0)
         keyword_filter = st.text_input("Filter by Query (Optional)", "")
         df = df[df["impressions"] >= min_impr]
         if keyword_filter:
