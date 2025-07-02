@@ -82,7 +82,7 @@ with tab1:
         st.subheader("🔔 Alerts Dashboard (SEO Performance Signals)")
         critical = df[(df["ctr"] < 1.0) & (df["impressions"] > 1000)]
         warnings = df[(df["impressions"] > 1000) & (df["clicks"] < 10)]
-        wins = df[(df["ctr"] > 10.0) & (df["position"] > 10)]
+        wins = df[(df["ctr"] > 10.0) & (df["position"] > 10.0)]  # ensure float comparison
 
         col1, col2, col3 = st.columns(3)
         col1.metric("🔴 Critical Issues", f"{len(critical):,}")
