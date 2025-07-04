@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 """
 Google Search Console Data Analyzer
-Enhanced with CTR Trendline, Smart Table Toggle, and Keyword Alert System
+Enhanced with Smart Table Toggle and Keyword Alert System
 Developed by Pravesh Patel
 """
 
 import streamlit as st
 import pandas as pd
 import numpy as np
-import plotly.express as px
 import plotly.graph_objects as go
 import io
 
@@ -81,53 +80,6 @@ if uploaded_file:
         ].head(10),
         use_container_width=True
     )
-
-    # CTR vs Position Explanation
-    with st.expander("ℹ️ How to Read 'CTR vs Position' Chart"):
-        st.markdown("""
-        - **Each dot** = 1 keyword/query  
-        - **X-axis (Position):** Lower = better Google ranking (1 = top)  
-        - **Y-axis (CTR):** Higher = better click-through rate  
-
-        ### Interpreting:
-        - ✅ **Top-left:** Strong keywords (high CTR & top ranking)  
-        - ⚠️ **Bottom-left:** Good rank but low CTR → improve meta/title  
-        - 🚀 **Top-right:** Low rank but strong CTR → boost content/rank  
-        - ❌ **Bottom-right:** Poor rank & CTR → deprioritize  
-        """)
-
-    # CTR vs Position Chart (uses full data)
-    st.markdown("### 📌 CTR vs Average Position (Interactive)")
-    df_sorted = df.sort_values("position")
-    fig = px.scatter(
-        df_sorted,
-        x="position",
-        y="ctr",
-        hover_data=["query", "clicks", "impressions"],
-        labels={"position": "Google Position", "ctr": "CTR (%)"},
-        title="CTR vs Position",
-        opacity=0.6
-    )
-
-    if len(df_sorted) > 1:
-        z = np.polyfit(df_sorted["position"], df_sorted["ctr"], 1)
-        p = np.poly1d(z)
-        fig.add_trace(
-            go.Scatter(
-                x=df_sorted["position"],
-                y=p(df_sorted["position"]),
-                mode="lines",
-                name="Trendline",
-                line=dict(color="red", dash="dash")
-            )
-        )
-
-    fig.update_layout(
-        xaxis=dict(autorange="reversed"),
-        template="plotly_white",
-        showlegend=True
-    )
-    st.plotly_chart(fig, use_container_width=True)
 
     # Opportunity keywords (full data)
     st.markdown("### 💡 Opportunity Keywords (Position 5–15, CTR < 5%)")
