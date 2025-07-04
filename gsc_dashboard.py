@@ -186,7 +186,7 @@ with tab2:
             if len(warnings) > 0:
                 insights.append(f"Found **{len(warnings)} keywords** gaining impressions but not enough clicks. Consider content freshness or intent mismatch.")
             if len(wins) > 0:
-                insights.append(f"Spotted **{len(wins)} high-CTR keywords** ranking low. These are strong candidates for internal linking or schema enhancements.")
+                insights.append(f"Spotted **{len(wins)} high-CTR keywords** ranking low. These are some keywords which require your attention.")
             if 'opp' in locals() and len(opp) > 0:
                 insights.append(f"Identified **{len(opp)} opportunity keywords** between position 5–15 and CTR under 5%. You might push these to top 3 positions.")
 
