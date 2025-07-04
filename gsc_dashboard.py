@@ -86,6 +86,11 @@ with tab1:
         surge_alerts = df[(df["impressions"] > 1000) & (df["clicks"] < 10) & (df["ctr"] < 1.0)]
         booster_alerts = df[(df["ctr"] > 10.0) & (df["position"] > 10)]
 
+        col1, col2, col3 = st.columns(3)
+        col1.metric("🔴 Critical Issue", f"{len(low_ctr_alerts):,}")
+        col2.metric("🟠 Warning", f"{len(surge_alerts):,}")
+        col3.metric("🟢 Potential Win", f"{len(booster_alerts):,}")
+
         with st.expander("🔴 Low CTR (<1%) with High Impressions"):
             st.dataframe(low_ctr_alerts.head(20), use_container_width=True)
 
