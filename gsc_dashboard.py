@@ -256,18 +256,17 @@ if countries_df is not None:
     st.download_button("📥 Download Countries Data", data=countries_df_filtered.to_csv(index=False), file_name="countries_data.csv", mime="text/csv")
 
 # Keyword Clustering (Auto)
-            st.subheader("🧠 Keyword Clustering")
-            from sklearn.feature_extraction.text import TfidfVectorizer
-            from sklearn.cluster import AgglomerativeClustering
+st.subheader("🧠 Keyword Clustering")
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.cluster import AgglomerativeClustering
 
-            vectorizer = TfidfVectorizer()
-            X = vectorizer.fit_transform(queries_df["query"])
-            clustering = AgglomerativeClustering(n_clusters=8)
-            queries_df["cluster"] = clustering.fit_predict(X)
+vectorizer = TfidfVectorizer()
+X = vectorizer.fit_transform(queries_df["query"])
+clustering = AgglomerativeClustering(n_clusters=8)
+queries_df["cluster"] = clustering.fit_predict(X)
 
-            with st.expander("📂 View Keyword Clusters"):
-                for cluster_id in sorted(queries_df["cluster"].unique()):
-                    st.markdown(f"### 🔸 Cluster {cluster_id}")
-                    cluster_data = queries_df[queries_df["cluster"] == cluster_id][["query", "clicks", "impressions", "ctr", "position"]]
-                    st.dataframe(cluster_data, use_container_width=True)
-
+with st.expander("📂 View Keyword Clusters"):
+    for cluster_id in sorted(queries_df["cluster"].unique()):
+        st.markdown(f"### 🔸 Cluster {cluster_id}")
+        cluster_data = queries_df[queries_df["cluster"] == cluster_id][["query", "clicks", "impressions", "ctr", "position"]]
+        st.dataframe(cluster_data, use_container_width=True)
