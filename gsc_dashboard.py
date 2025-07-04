@@ -190,37 +190,37 @@ with tab2:
 
             st.download_button("📥 Download Opportunities as CSV", data=opp.to_csv(index=False), file_name="excel_opportunity_keywords.csv", mime="text/csv")
 
-# ========== 🌐 Analyze Pages Sheet ==========
-pages_df = all_sheets.get("Pages")
-if pages_df is not None:
-    st.subheader("🌐 Top Pages Performance")
-    pages_df.columns = [col.strip().lower().replace(" ", "_") for col in pages_df.columns]
-    pages_df.rename(columns={"top_pages": "page"}, inplace=True)
+            # ========== 🌐 Analyze Pages Sheet ==========
+            pages_df = all_sheets.get("Pages")
+            if pages_df is not None:
+            st.subheader("🌐 Top Pages Performance")
+            pages_df.columns = [col.strip().lower().replace(" ", "_") for col in pages_df.columns]
+            pages_df.rename(columns={"top_pages": "page"}, inplace=True)
 
-    for col in ["clicks", "impressions", "position"]:
-        pages_df[col] = pages_df[col].astype(str).str.replace(",", "").astype(float)
+            for col in ["clicks", "impressions", "position"]:
+                pages_df[col] = pages_df[col].astype(str).str.replace(",", "").astype(float)
 
-    pages_df["ctr"] = (
-        pages_df["ctr"]
-        .astype(str)
-        .str.replace("%", "", regex=False)
-        .str.replace(",", "", regex=False)
-        .astype(float)
-    )
+            pages_df["ctr"] = (
+                pages_df["ctr"]
+                .astype(str)
+                .str.replace("%", "", regex=False)
+                .str.replace(",", "", regex=False)
+                .astype(float)
+            )
 
-    if pages_df["ctr"].max() <= 1:
-        pages_df["ctr"] *= 100
+           if pages_df["ctr"].max() <= 1:
+            pages_df["ctr"] *= 100
 
-    pages_df.dropna(subset=["page", "clicks", "impressions", "ctr", "position"], how="all", inplace=True)
+            pages_df.dropna(subset=["page", "clicks", "impressions", "ctr", "position"], how="all", inplace=True)
 
-    with st.expander("🔍 Filter Pages Data"):
-        min_page_impr = st.slider("Minimum Impressions (Pages)", 0, int(pages_df["impressions"].max()), 0, key="page_min_impr")
-        pages_df_filtered = pages_df[pages_df["impressions"] >= min_page_impr]
+            with st.expander("🔍 Filter Pages Data"):
+            min_page_impr = st.slider("Minimum Impressions (Pages)", 0, int(pages_df["impressions"].max()), 0, key="page_min_impr")
+            pages_df_filtered = pages_df[pages_df["impressions"] >= min_page_impr]
 
-    st.markdown(f"**Total Pages:** {len(pages_df_filtered)}")
-    st.dataframe(pages_df_filtered.sort_values(by="clicks", ascending=False).head(10), use_container_width=True)
+            st.markdown(f"**Total Pages:** {len(pages_df_filtered)}")
+            st.dataframe(pages_df_filtered.sort_values(by="clicks", ascending=False).head(10), use_container_width=True)
 
-    st.download_button("📥 Download Pages Data", data=pages_df_filtered.to_csv(index=False), file_name="pages_data.csv", mime="text/csv")
+            st.download_button("📥 Download Pages Data", data=pages_df_filtered.to_csv(index=False), file_name="pages_data.csv", mime="text/csv")
 
 
 # ========== 🌍 Analyze Countries Sheet ==========
