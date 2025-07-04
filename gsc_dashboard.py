@@ -104,6 +104,8 @@ with tab2:
 
     if excel_file:
         all_sheets = pd.read_excel(excel_file, sheet_name=None)
+
+        # ========== QUERIES SHEET ==========
         queries_df = all_sheets.get("Queries")
         if queries_df is not None:
             queries_df.columns = [col.strip().lower().replace(" ", "_") for col in queries_df.columns]
@@ -120,7 +122,6 @@ with tab2:
                 .astype(float)
             )
 
-            # ✅ Fix CTR if stored as 0.x (fraction instead of percentage)
             if queries_df["ctr"].max() <= 1:
                 queries_df["ctr"] *= 100
 
@@ -130,7 +131,6 @@ with tab2:
                 min_impr = st.slider("Minimum Impressions", 0, int(queries_df["impressions"].max()), 100, key="excel_min_impr")
                 keyword_filter = st.text_input("Filter by Query (Optional)", "", key="excel_kw_filter")
 
-            # Filtered view only used for KPIs and top queries
             queries_filtered = queries_df.copy()
             if min_impr > 0:
                 queries_filtered = queries_filtered[queries_filtered["impressions"] >= min_impr]
@@ -161,24 +161,15 @@ with tab2:
 
             with st.expander("🔴 View Critical Issues"):
                 st.markdown("**Low CTR (<1%) with High Impressions (>1000)**")
-                if not critical.empty:
-                    st.dataframe(critical, use_container_width=True)
-                else:
-                    st.info("No critical issues found.")
+                st.dataframe(critical if not critical.empty else pd.DataFrame(), use_container_width=True)
 
             with st.expander("🟠 View Warning Keywords"):
                 st.markdown("**Impression Surge but Low Clicks (<10)**")
-                if not warnings.empty:
-                    st.dataframe(warnings, use_container_width=True)
-                else:
-                    st.info("No warnings found.")
+                st.dataframe(warnings if not warnings.empty else pd.DataFrame(), use_container_width=True)
 
             with st.expander("🟢 View High-CTR, Low-Rank Wins"):
                 st.markdown("**High CTR (>10%) but Low Ranking (Position >10)**")
-                if not wins.empty:
-                    st.dataframe(wins, use_container_width=True)
-                else:
-                    st.info("No wins found.")
+                st.dataframe(wins if not wins.empty else pd.DataFrame(), use_container_width=True)
 
             st.subheader("🔝 Top Queries by Clicks")
             st.dataframe(queries_filtered.sort_values(by="clicks", ascending=False).head(10), use_container_width=True)
@@ -187,71 +178,43 @@ with tab2:
             opp = queries_df[(queries_df["position"].between(5, 15)) & (queries_df["ctr"] < 5)]
             st.markdown(f"**Total Opportunities:** {len(opp)}")
             st.dataframe(opp.sort_values(by="impressions", ascending=False), use_container_width=True)
-
             st.download_button("📥 Download Opportunities as CSV", data=opp.to_csv(index=False), file_name="excel_opportunity_keywords.csv", mime="text/csv")
 
-            # ========== 🌐 Analyze Pages Sheet ==========
-            pages_df = all_sheets.get("Pages")
-            if pages_df is not None:
+        # ========== PAGES SHEET ==========
+        pages_df = all_sheets.get("Pages")
+        if pages_df is not None:
             st.subheader("🌐 Top Pages Performance")
             pages_df.columns = [col.strip().lower().replace(" ", "_") for col in pages_df.columns]
             pages_df.rename(columns={"top_pages": "page"}, inplace=True)
-
             for col in ["clicks", "impressions", "position"]:
                 pages_df[col] = pages_df[col].astype(str).str.replace(",", "").astype(float)
-
-            pages_df["ctr"] = (
-                pages_df["ctr"]
-                .astype(str)
-                .str.replace("%", "", regex=False)
-                .str.replace(",", "", regex=False)
-                .astype(float)
-            )
-
-           if pages_df["ctr"].max() <= 1:
-            pages_df["ctr"] *= 100
-
+            pages_df["ctr"] = pages_df["ctr"].astype(str).str.replace("%", "", regex=False).str.replace(",", "", regex=False).astype(float)
+            if pages_df["ctr"].max() <= 1:
+                pages_df["ctr"] *= 100
             pages_df.dropna(subset=["page", "clicks", "impressions", "ctr", "position"], how="all", inplace=True)
-
             with st.expander("🔍 Filter Pages Data"):
-            min_page_impr = st.slider("Minimum Impressions (Pages)", 0, int(pages_df["impressions"].max()), 0, key="page_min_impr")
-            pages_df_filtered = pages_df[pages_df["impressions"] >= min_page_impr]
-
+                min_page_impr = st.slider("Minimum Impressions (Pages)", 0, int(pages_df["impressions"].max()), 0, key="page_min_impr")
+                pages_df_filtered = pages_df[pages_df["impressions"] >= min_page_impr]
             st.markdown(f"**Total Pages:** {len(pages_df_filtered)}")
             st.dataframe(pages_df_filtered.sort_values(by="clicks", ascending=False).head(10), use_container_width=True)
-
             st.download_button("📥 Download Pages Data", data=pages_df_filtered.to_csv(index=False), file_name="pages_data.csv", mime="text/csv")
 
-
-# ========== 🌍 Analyze Countries Sheet ==========
-countries_df = all_sheets.get("Countries")
-if countries_df is not None:
-    st.subheader("🌍 Top Countries Performance")
-    countries_df.columns = [col.strip().lower().replace(" ", "_") for col in countries_df.columns]
-    countries_df.rename(columns={"top_countries": "country"}, inplace=True)
-
-    for col in ["clicks", "impressions", "position"]:
-        countries_df[col] = countries_df[col].astype(str).str.replace(",", "").astype(float)
-
-    countries_df["ctr"] = (
-        countries_df["ctr"]
-        .astype(str)
-        .str.replace("%", "", regex=False)
-        .str.replace(",", "", regex=False)
-        .astype(float)
-    )
-
-    if countries_df["ctr"].max() <= 1:
-        countries_df["ctr"] *= 100
-
-    countries_df.dropna(subset=["country", "clicks", "impressions", "ctr", "position"], how="all", inplace=True)
-
-    with st.expander("🔍 Filter Countries Data"):
-        min_country_impr = st.slider("Minimum Impressions (Countries)", 0, int(countries_df["impressions"].max()), 0, key="country_min_impr")
-        countries_df_filtered = countries_df[countries_df["impressions"] >= min_country_impr]
-
-    st.markdown(f"**Total Countries:** {len(countries_df_filtered)}")
-    st.dataframe(countries_df_filtered.sort_values(by="clicks", ascending=False).head(10), use_container_width=True)
-
-    st.download_button("📥 Download Countries Data", data=countries_df_filtered.to_csv(index=False), file_name="countries_data.csv", mime="text/csv")
+        # ========== COUNTRIES SHEET ==========
+        countries_df = all_sheets.get("Countries")
+        if countries_df is not None:
+            st.subheader("🌍 Top Countries Performance")
+            countries_df.columns = [col.strip().lower().replace(" ", "_") for col in countries_df.columns]
+            countries_df.rename(columns={"top_countries": "country"}, inplace=True)
+            for col in ["clicks", "impressions", "position"]:
+                countries_df[col] = countries_df[col].astype(str).str.replace(",", "").astype(float)
+            countries_df["ctr"] = countries_df["ctr"].astype(str).str.replace("%", "", regex=False).str.replace(",", "", regex=False).astype(float)
+            if countries_df["ctr"].max() <= 1:
+                countries_df["ctr"] *= 100
+            countries_df.dropna(subset=["country", "clicks", "impressions", "ctr", "position"], how="all", inplace=True)
+            with st.expander("🔍 Filter Countries Data"):
+                min_country_impr = st.slider("Minimum Impressions (Countries)", 0, int(countries_df["impressions"].max()), 0, key="country_min_impr")
+                countries_df_filtered = countries_df[countries_df["impressions"] >= min_country_impr]
+            st.markdown(f"**Total Countries:** {len(countries_df_filtered)}")
+            st.dataframe(countries_df_filtered.sort_values(by="clicks", ascending=False).head(10), use_container_width=True)
+            st.download_button("📥 Download Countries Data", data=countries_df_filtered.to_csv(index=False), file_name="countries_data.csv", mime="text/csv")
 
