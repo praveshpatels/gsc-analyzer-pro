@@ -7,12 +7,10 @@ Developed by Pravesh Patel
 
 import streamlit as st
 import pandas as pd
-import numpy as np
-import plotly.graph_objects as go
 import io
 
 # Page setup
-st.set_page_config(page_title="GSC Data Analyzer", page_icon="🔍", layout="wide")
+st.set_page_config(page_title="GSC Analyzer", page_icon="🔍", layout="wide")
 st.title("🔍 Google Search Console Data Analyzer")
 st.markdown("*Developed by **Pravesh Patel***", unsafe_allow_html=True)
 
@@ -24,14 +22,13 @@ Hi, I'm **Pravesh Patel** — a passionate SEO Manager and Data Enthusiast.
 🔍 I specialize in SEO, analytics, and tools that simplify Google Search Console data.
 
 💼 I build tools like this to find content opportunities faster.
-
 """)
 
-# Upload file
+# File upload
 uploaded_file = st.file_uploader("📁 Upload GSC CSV file (Performance > Queries)", type=["csv"])
 
 if uploaded_file:
-    # Read and normalize CSV
+    # Read and preprocess CSV
     raw_data = uploaded_file.read().decode("utf-8")
     df = pd.read_csv(io.StringIO(raw_data))
 
@@ -39,28 +36,34 @@ if uploaded_file:
     df.columns = [col.strip().lower().replace(" ", "_") for col in df.columns]
     df.rename(columns={"top_queries": "query"}, inplace=True)
 
-    # Clean data
+    # Clean numeric data
     for col in ["clicks", "impressions", "position"]:
         df[col] = df[col].astype(str).str.replace(",", "", regex=False)
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
     df["ctr"] = df["ctr"].astype(str).str.replace("%", "", regex=False).str.replace(",", "", regex=False)
     df["ctr"] = pd.to_numeric(df["ctr"], errors="coerce")
+
     df.dropna(subset=["clicks", "impressions", "ctr", "position"], how="all", inplace=True)
 
-    # Filter Controls (for KPIs + Top Queries only)
+    # Filter Controls (for KPIs & Top Queries)
     with st.expander("🔍 Filter Data for KPIs & Top Queries"):
         min_impr = st.slider("Minimum Impressions", 0, int(df["impressions"].max()), 0)
         keyword_filter = st.text_input("Filter by Query (Optional)", "")
 
-    # Apply filters for KPIs & Top Queries only
+    # Apply filters
     df_filtered = df.copy()
     if min_impr > 0:
         df_filtered = df_filtered[df_filtered["impressions"] >= min_impr]
     if keyword_filter:
         df_filtered = df_filtered[df_filtered["query"].str.contains(keyword_filter, case=False, na=False)]
 
-    # Show raw data (filtered)
+    # Guard against empty filter result
+    if df_filtered.empty:
+        st.warning("⚠️ No rows match the current filters. Please adjust your filter criteria.")
+        st.stop()
+
+    # Show raw data
     if st.checkbox("📄 Show Raw Data (Filtered)"):
         row_limit = st.radio("How many rows to display?", options=["Top 100", "Top 500", "All"], index=1)
         if row_limit == "Top 100":
@@ -70,7 +73,7 @@ if uploaded_file:
         else:
             st.dataframe(df_filtered, use_container_width=True)
 
-    # KPIs based on filtered data
+    # KPIs
     st.markdown("### 📊 Overall Performance (Filtered)")
     total_clicks = df_filtered["clicks"].sum()
     total_impressions = df_filtered["impressions"].sum()
@@ -83,7 +86,7 @@ if uploaded_file:
     col3.metric("Avg. CTR", f"{avg_ctr:.2f}%")
     col4.metric("Avg. Position", f"{avg_position:.2f}")
 
-    # Top Queries based on filtered data
+    # Top Queries
     st.markdown("### 🔝 Top Queries by Clicks (Filtered)")
     st.dataframe(
         df_filtered.sort_values(by="clicks", ascending=False)[
@@ -92,7 +95,7 @@ if uploaded_file:
         use_container_width=True
     )
 
-    # Opportunity keywords (full data)
+    # Opportunity Keywords
     st.markdown("### 💡 Opportunity Keywords (Position 5–15, CTR < 5%)")
     opportunities = df[(df["position"] >= 5) & (df["position"] <= 15) & (df["ctr"] < 5)]
     st.dataframe(
@@ -106,7 +109,7 @@ if uploaded_file:
         mime="text/csv"
     )
 
-    # Keyword Alerts (full data)
+    # Keyword Alerts
     st.markdown("### 🚨 Keyword Alerts (SEO Insights)")
 
     # 1. Low CTR with High Impressions
@@ -129,7 +132,7 @@ if uploaded_file:
             use_container_width=True
         )
 
-    # 3. High CTR but Low Rank
+    # 3. High CTR but Low Ranking
     booster_alerts = df[(df["ctr"] > 10.0) & (df["position"] > 10)]
     with st.expander("🚀 High CTR (>10%) but Low Ranking (Position >10)"):
         st.dataframe(
