@@ -176,27 +176,25 @@ with tab2:
                 st.markdown("**High CTR (>10%) but Low Ranking (Position >10)**")
                 st.dataframe(wins if not wins.empty else pd.DataFrame(), use_container_width=True)
             
-            # 🧠 AI Summary with Toggle
-            with st.expander("🧠 AI-Powered Recommendations (Click to View)"):
-                show_ai_summary = st.toggle("Show Summary", value=True, key="excel_ai_summary_toggle")
+            # 🧠 AI Summary
+            st.subheader("🧠 AI-Powered Recommendations")
 
-                if show_ai_summary:
-                    insights = []
+            insights = []
 
-                    if len(critical) > 0:
-                        insights.append(f"You have **{len(critical)} keywords** with high impressions but CTR below 1%. Improve meta titles and descriptions.")
-                    if len(warnings) > 0:
-                        insights.append(f"Found **{len(warnings)} keywords** gaining impressions but not enough clicks. Consider content freshness or intent mismatch.")
-                    if len(wins) > 0:
-                        insights.append(f"Spotted **{len(wins)} high-CTR keywords** ranking low. These are strong candidates for internal linking or schema enhancements.")
-                    if 'opp' in locals() and len(opp) > 0:
-                        insights.append(f"Identified **{len(opp)} opportunity keywords** between position 5–15 and CTR under 5%. You might push these to top 3 positions.")
+            if len(critical) > 0:
+                insights.append(f"You have **{len(critical)} keywords** with high impressions but CTR below 1%. Improve meta titles and descriptions.")
+            if len(warnings) > 0:
+                insights.append(f"Found **{len(warnings)} keywords** gaining impressions but not enough clicks. Consider content freshness or intent mismatch.")
+            if len(wins) > 0:
+                insights.append(f"Spotted **{len(wins)} high-CTR keywords** ranking low. These are strong candidates for internal linking or schema enhancements.")
+            if 'opp' in locals() and len(opp) > 0:
+                insights.append(f"Identified **{len(opp)} opportunity keywords** between position 5–15 and CTR under 5%. You might push these to top 3 positions.")
 
-                    if insights:
-                        for tip in insights:
-                            st.markdown(f"- {tip}")
-                    else:
-                        st.info("No significant issues or opportunities found in this dataset.")
+            if insights:
+                for tip in insights:
+                    st.markdown(f"- {tip}")
+            else:
+                st.info("No significant issues or opportunities found in this dataset.")
             
 
             st.subheader("🔝 Top Queries by Clicks")
