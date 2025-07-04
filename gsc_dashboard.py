@@ -189,3 +189,56 @@ with tab2:
             st.dataframe(opp.sort_values(by="impressions", ascending=False), use_container_width=True)
 
             st.download_button("📥 Download Opportunities as CSV", data=opp.to_csv(index=False), file_name="excel_opportunity_keywords.csv", mime="text/csv")
+
+# ========== 🌐 Analyze Pages Sheet ==========
+pages_df = all_sheets.get("Pages")
+if pages_df is not None:
+    st.subheader("🌐 Top Pages Performance")
+    pages_df.columns = [col.strip().lower().replace(" ", "_") for col in pages_df.columns]
+    pages_df.rename(columns={"top_pages": "page"}, inplace=True)
+
+    for col in ["clicks", "impressions", "position"]:
+        pages_df[col] = pages_df[col].astype(str).str.replace(",", "").astype(float)
+
+    pages_df["ctr"] = (
+        pages_df["ctr"]
+        .astype(str)
+        .str.replace("%", "", regex=False)
+        .str.replace(",", "", regex=False)
+        .astype(float)
+    )
+
+    if pages_df["ctr"].max() <= 1:
+        pages_df["ctr"] *= 100
+
+    pages_df.dropna(subset=["page", "clicks", "impressions", "ctr", "position"], how="all", inplace=True)
+
+    st.dataframe(pages_df.sort_values(by="clicks", ascending=False).head(10), use_container_width=True)
+    st.download_button("📥 Download Pages Data", data=pages_df.to_csv(index=False), file_name="pages_data.csv", mime="text/csv")
+
+
+# ========== 🌍 Analyze Countries Sheet ==========
+countries_df = all_sheets.get("Countries")
+if countries_df is not None:
+    st.subheader("🌍 Top Countries Performance")
+    countries_df.columns = [col.strip().lower().replace(" ", "_") for col in countries_df.columns]
+    countries_df.rename(columns={"top_countries": "country"}, inplace=True)
+
+    for col in ["clicks", "impressions", "position"]:
+        countries_df[col] = countries_df[col].astype(str).str.replace(",", "").astype(float)
+
+    countries_df["ctr"] = (
+        countries_df["ctr"]
+        .astype(str)
+        .str.replace("%", "", regex=False)
+        .str.replace(",", "", regex=False)
+        .astype(float)
+    )
+
+    if countries_df["ctr"].max() <= 1:
+        countries_df["ctr"] *= 100
+
+    countries_df.dropna(subset=["country", "clicks", "impressions", "ctr", "position"], how="all", inplace=True)
+
+    st.dataframe(countries_df.sort_values(by="clicks", ascending=False).head(10), use_container_width=True)
+    st.download_button("📥 Download Countries Data", data=countries_df.to_csv(index=False), file_name="countries_data.csv", mime="text/csv")
