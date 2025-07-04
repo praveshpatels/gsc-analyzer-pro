@@ -4,7 +4,7 @@ import numpy as np
 import io
 
 # Page Setup
-st.set_page_config(page_title="GSC Analyzer Pro", page_icon="🔍", layout="wide")
+st.set_page_config(page_title="GSC Analyzer Pro - Pravesh Patel", page_icon="🔍", layout="wide")
 st.title("🔍 Google Search Console Analyzer Pro")
 st.markdown("*Developed by **Pravesh Patel***", unsafe_allow_html=True)
 
