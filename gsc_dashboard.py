@@ -213,8 +213,14 @@ if pages_df is not None:
 
     pages_df.dropna(subset=["page", "clicks", "impressions", "ctr", "position"], how="all", inplace=True)
 
-    st.dataframe(pages_df.sort_values(by="clicks", ascending=False).head(10), use_container_width=True)
-    st.download_button("📥 Download Pages Data", data=pages_df.to_csv(index=False), file_name="pages_data.csv", mime="text/csv")
+    with st.expander("🔍 Filter Pages Data"):
+        min_page_impr = st.slider("Minimum Impressions (Pages)", 0, int(pages_df["impressions"].max()), 0, key="page_min_impr")
+        pages_df_filtered = pages_df[pages_df["impressions"] >= min_page_impr]
+
+    st.markdown(f"**Total Pages:** {len(pages_df_filtered)}")
+    st.dataframe(pages_df_filtered.sort_values(by="clicks", ascending=False).head(10), use_container_width=True)
+
+    st.download_button("📥 Download Pages Data", data=pages_df_filtered.to_csv(index=False), file_name="pages_data.csv", mime="text/csv")
 
 
 # ========== 🌍 Analyze Countries Sheet ==========
@@ -240,5 +246,11 @@ if countries_df is not None:
 
     countries_df.dropna(subset=["country", "clicks", "impressions", "ctr", "position"], how="all", inplace=True)
 
-    st.dataframe(countries_df.sort_values(by="clicks", ascending=False).head(10), use_container_width=True)
-    st.download_button("📥 Download Countries Data", data=countries_df.to_csv(index=False), file_name="countries_data.csv", mime="text/csv")
+    with st.expander("🔍 Filter Countries Data"):
+        min_country_impr = st.slider("Minimum Impressions (Countries)", 0, int(countries_df["impressions"].max()), 0, key="country_min_impr")
+        countries_df_filtered = countries_df[countries_df["impressions"] >= min_country_impr]
+
+    st.markdown(f"**Total Countries:** {len(countries_df_filtered)}")
+    st.dataframe(countries_df_filtered.sort_values(by="clicks", ascending=False).head(10), use_container_width=True)
+
+    st.download_button("📥 Download Countries Data", data=countries_df_filtered.to_csv(index=False), file_name="countries_data.csv", mime="text/csv")
